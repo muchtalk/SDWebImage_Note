@@ -4,7 +4,7 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
-		<key>SDWebImage_Note.xcscheme</key>
+		<key>SDWebImage_note.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>0</integer>
@@ -23,6 +23,21 @@
 			<true/>
 		</dict>
 		<key>C7C2CD2F1CC7B20600854267</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>C7C2CDBF1CCBB60E00854267</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>C7C2CDD81CCBB60E00854267</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>C7C2CDE31CCBB60E00854267</key>
 		<dict>
 			<key>primary</key>
 			<true/>

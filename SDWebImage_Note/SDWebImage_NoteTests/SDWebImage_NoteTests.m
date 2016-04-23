@@ -1,18 +1,18 @@
 //
-//  SDWebImage_NoteTests.m
-//  SDWebImage_NoteTests
+//  SDWebImage_noteTests.m
+//  SDWebImage_noteTests
 //
-//  Created by HG on 16/4/20.
+//  Created by HG on 16/4/23.
 //  Copyright © 2016年 com.HG. All rights reserved.
 //
 
 #import <XCTest/XCTest.h>
 
-@interface SDWebImage_NoteTests : XCTestCase
+@interface SDWebImage_noteTests : XCTestCase
 
 @end
 
-@implementation SDWebImage_NoteTests
+@implementation SDWebImage_noteTests
 
 - (void)setUp {
     [super setUp];

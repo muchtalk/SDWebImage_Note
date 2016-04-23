@@ -14,6 +14,7 @@ static char loadOperationKey;
 @implementation UIView (WebCacheOperation)
 
 - (NSMutableDictionary *)operationDictionary {
+    // 这里用关联给imageView 对象并且懒加载添加了一个 Dictionary（保存operation） 的get 方法
     NSMutableDictionary *operations = objc_getAssociatedObject(self, &loadOperationKey);
     if (operations) {
         return operations;
@@ -31,6 +32,11 @@ static char loadOperationKey;
 
 - (void)sd_cancelImageLoadOperationWithKey:(NSString *)key {
     // Cancel in progress downloader from queue
+    // 根据key 去operation中查找并且cancel掉保存在 operationDictionary 中的 operation 对象 该operation 可能是NSArray或者是遵循  <SDWebImageOperation> 协议的对象类型
+    // 如果是NSArray 其中保存的也是遵循了 <SDWebImageOperation> 协议的对象
+    // 为什么这些对象都需要遵守 <SDWebImageOperation> 这个协议? 因为该协议声明了 -cancel 方法,既然根据key是cancel掉operation， 所以必须遵守这个协议
+    // cancel 完成后将key从operationDictionary移除
+    
     NSMutableDictionary *operationDictionary = [self operationDictionary];
     id operations = [operationDictionary objectForKey:key];
     if (operations) {

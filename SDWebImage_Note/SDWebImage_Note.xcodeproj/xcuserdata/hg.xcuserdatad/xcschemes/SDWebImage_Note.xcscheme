@@ -14,10 +14,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C7C2CD0B1CC7B20600854267"
-               BuildableName = "SDWebImage_Note.app"
-               BlueprintName = "SDWebImage_Note"
-               ReferencedContainer = "container:SDWebImage_Note.xcodeproj">
+               BlueprintIdentifier = "C7C2CDBF1CCBB60E00854267"
+               BuildableName = "SDWebImage_note.app"
+               BlueprintName = "SDWebImage_note"
+               ReferencedContainer = "container:SDWebImage_note.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -32,30 +32,30 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C7C2CD241CC7B20600854267"
-               BuildableName = "SDWebImage_NoteTests.xctest"
-               BlueprintName = "SDWebImage_NoteTests"
-               ReferencedContainer = "container:SDWebImage_Note.xcodeproj">
+               BlueprintIdentifier = "C7C2CDD81CCBB60E00854267"
+               BuildableName = "SDWebImage_noteTests.xctest"
+               BlueprintName = "SDWebImage_noteTests"
+               ReferencedContainer = "container:SDWebImage_note.xcodeproj">
             </BuildableReference>
          </TestableReference>
          <TestableReference
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C7C2CD2F1CC7B20600854267"
-               BuildableName = "SDWebImage_NoteUITests.xctest"
-               BlueprintName = "SDWebImage_NoteUITests"
-               ReferencedContainer = "container:SDWebImage_Note.xcodeproj">
+               BlueprintIdentifier = "C7C2CDE31CCBB60E00854267"
+               BuildableName = "SDWebImage_noteUITests.xctest"
+               BlueprintName = "SDWebImage_noteUITests"
+               ReferencedContainer = "container:SDWebImage_note.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C7C2CD0B1CC7B20600854267"
-            BuildableName = "SDWebImage_Note.app"
-            BlueprintName = "SDWebImage_Note"
-            ReferencedContainer = "container:SDWebImage_Note.xcodeproj">
+            BlueprintIdentifier = "C7C2CDBF1CCBB60E00854267"
+            BuildableName = "SDWebImage_note.app"
+            BlueprintName = "SDWebImage_note"
+            ReferencedContainer = "container:SDWebImage_note.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -75,10 +75,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C7C2CD0B1CC7B20600854267"
-            BuildableName = "SDWebImage_Note.app"
-            BlueprintName = "SDWebImage_Note"
-            ReferencedContainer = "container:SDWebImage_Note.xcodeproj">
+            BlueprintIdentifier = "C7C2CDBF1CCBB60E00854267"
+            BuildableName = "SDWebImage_note.app"
+            BlueprintName = "SDWebImage_note"
+            ReferencedContainer = "container:SDWebImage_note.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -94,10 +94,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C7C2CD0B1CC7B20600854267"
-            BuildableName = "SDWebImage_Note.app"
-            BlueprintName = "SDWebImage_Note"
-            ReferencedContainer = "container:SDWebImage_Note.xcodeproj">
+            BlueprintIdentifier = "C7C2CDBF1CCBB60E00854267"
+            BuildableName = "SDWebImage_note.app"
+            BlueprintName = "SDWebImage_note"
+            ReferencedContainer = "container:SDWebImage_note.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

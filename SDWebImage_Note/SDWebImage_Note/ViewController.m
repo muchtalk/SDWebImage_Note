@@ -1,8 +1,8 @@
 //
 //  ViewController.m
-//  SDWebImage_Note
+//  SDWebImage_note
 //
-//  Created by HG on 16/4/20.
+//  Created by HG on 16/4/23.
 //  Copyright © 2016年 com.HG. All rights reserved.
 //
 

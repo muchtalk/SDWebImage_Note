@@ -42,6 +42,22 @@ static char TAG_ACTIVITY_SHOW;
 }
 
 - (void)sd_setImageWithURL:(NSURL *)url placeholderImage:(UIImage *)placeholder options:(SDWebImageOptions)options progress:(SDWebImageDownloaderProgressBlock)progressBlock completed:(SDWebImageCompletionBlock)completedBlock {
+    
+    // 取消当前正在load的image operations，并且将url链接作为 imageURLKey 然后在主线程中设置imageView的placeholder
+    // 再根据是否需要显示转圈小菊花的 showActivityIndicatorView get方法决定是否显示菊花
+    // 对self 进行weak 后将url,option,progressBlock等参数传入SDWebImageManager类生成一个图片下载的遵守 <SDWebImageOperation> 协议的 operation
+    // operation 的 completed回调中提供了 下载image，状态finished, url, cacheType, error等信息，
+    // 将operation 保存到operationDictionry中且以 ‘UIImageViewImageLoad’ 作为key
+    // 在url为空的情况下回到主线程中移除菊花并且抛出 SDWebImageErrorDomain 的 error
+    
+    // 在operation completed回调处理：
+        //  首先移除掉imageview上添加的菊花 ，判断如果wself已经被释放，那么直接retun；
+        //  1.然后将传入的option参数和 SDWebImageAvoidAutoSetImage进行2进制‘与’操作  判断当前image对象存在且 completedBlock不为空且与操作结果为真（options & SDWebImageAvoidAutoSetImage）那么直接调用 completedBlock并且返回
+        //  2.image 对象存在时添加image到imageview上并且标记view setNeedsLayout;
+        //  3.如果 1和2都不满足的情况 判断option 是否包含了 SDWebImageDelayPlaceholder 如果包含了那么 设置将imageview 设置上placeholder,并且标记view setNeedsLayout；
+        //  也就是在图片没有下载完之前且option中包含了 SDWebImageDelayPlaceholder那么我们
+        //  4. completedBlock && finished 为真时，调用completedBlock
+
     [self sd_cancelCurrentImageLoad];
     objc_setAssociatedObject(self, &imageURLKey, url, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
@@ -73,6 +89,7 @@ static char TAG_ACTIVITY_SHOW;
                     wself.image = image;
                     [wself setNeedsLayout];
                 } else {
+// ??????????????????????
                     if ((options & SDWebImageDelayPlaceholder)) {
                         wself.image = placeholder;
                         [wself setNeedsLayout];
@@ -138,10 +155,12 @@ static char TAG_ACTIVITY_SHOW;
 }
 
 - (void)sd_cancelCurrentImageLoad {
+    // 根据 UIImageViewImageLoad这个Key 去取消正在load 的imag请求
     [self sd_cancelImageLoadOperationWithKey:@"UIImageViewImageLoad"];
 }
 
 - (void)sd_cancelCurrentAnimationImagesLoad {
+    // 根据 UIImageViewAnimationImages这个Key 去取消正在Animation 的imag请求
     [self sd_cancelImageLoadOperationWithKey:@"UIImageViewAnimationImages"];
 }
 
@@ -203,6 +222,9 @@ static char TAG_ACTIVITY_SHOW;
 }
 
 - (void)removeActivityIndicator {
+    
+    // 判断菊花是否存在，如果存在那么就从imageview中移除并且清空指针
+    
     if (self.activityIndicator) {
         [self.activityIndicator removeFromSuperview];
         self.activityIndicator = nil;
