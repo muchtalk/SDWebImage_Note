@@ -113,6 +113,12 @@ static char TAG_ACTIVITY_SHOW;
 }
 
 - (void)sd_setImageWithPreviousCachedImageWithURL:(NSURL *)url placeholderImage:(UIImage *)placeholder options:(SDWebImageOptions)options progress:(SDWebImageDownloaderProgressBlock)progressBlock completed:(SDWebImageCompletionBlock)completedBlock {
+    
+    /**
+     *  通过url 去查找缓存的image的key，根据key去从磁盘取对应图片 然后调用 sd_setImageWithURL方法 如果缓存图片存在那么使用，如果不存在则使用placeholder
+     */
+    
+    
     NSString *key = [[SDWebImageManager sharedManager] cacheKeyForURL:url];
     UIImage *lastPreviousCachedImage = [[SDImageCache sharedImageCache] imageFromDiskCacheForKey:key];
     
@@ -124,6 +130,16 @@ static char TAG_ACTIVITY_SHOW;
 }
 
 - (void)sd_setAnimationImagesWithURLs:(NSArray *)arrayOfURLs {
+    
+    /**
+     *  首先cancel掉之前的load 操作 然后用一个可变数组来接收根据多个url 返回的多个operation
+     *  opertion 的completed 回调中：
+     *  1.首先 判断weakself是否存在 如果不存在那么直接return，
+     *  2.否则先停止imageview正在播放动画的动作（stopAnimating）然后对weakself添加强引用strongSelf
+     *  3.判断self 和image 同时存在的情况那么拷贝self 当前的 animationImages 数组对象，如果 并且将新请求到的图片追加到 animationImages数组中并且重新赋值给当前的Imageview 标记view需要layout，
+     *  4.开始动画
+     */
+    
     [self sd_cancelCurrentAnimationImagesLoad];
     __weak __typeof(self)wself = self;
 
@@ -222,9 +238,7 @@ static char TAG_ACTIVITY_SHOW;
 }
 
 - (void)removeActivityIndicator {
-    
     // 判断菊花是否存在，如果存在那么就从imageview中移除并且清空指针
-    
     if (self.activityIndicator) {
         [self.activityIndicator removeFromSuperview];
         self.activityIndicator = nil;
