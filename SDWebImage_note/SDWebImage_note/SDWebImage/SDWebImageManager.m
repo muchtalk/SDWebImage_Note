@@ -52,6 +52,12 @@
 }
 
 - (NSString *)cacheKeyForURL:(NSURL *)url {
+    /**
+     *  传入一个url 如果存在 cacheKeyFilter的block 那么执行 cacheKeyFilter 的逻辑并返回key
+     *  不存在 cacheKeyFilter时候 返回 url 的完整url字符串 absoluteString作为key
+     */
+    
+    
     if (self.cacheKeyFilter) {
         return self.cacheKeyFilter(url);
     }
@@ -111,6 +117,20 @@
                                          options:(SDWebImageOptions)options
                                         progress:(SDWebImageDownloaderProgressBlock)progressBlock
                                        completed:(SDWebImageCompletionWithFinishedBlock)completedBlock {
+    /**
+     *  1.如果completedBlock为空的情况下我们抛出断言，
+     *  2.对url参数进行容错处理
+     *  3.创建一个新的 SDWebImageCombinedOperation （继承自NSObject而非NSOperation）对象
+     *  4.判断当前需要请求的图片url 在 failedURLs这个集合中是否已经存在
+     *  5.根据url的lenth 为0 或者（ options 中包含 SDWebImageRetryFailed 这种option且url为 isFailedUrl）那么我们直接在主线程中抛出error信息并且回调block return一个operation
+     *  6.如果 第五部没有执行，那么将这个 SDWebImageCombinedOperation 对象添加到 runningOperations这个可变数组中
+     *  7.根据url生成一个缓存key 然后 SDImageCache 会生成一个 cacheOperation
+     *  8. cacheOperation 会去从先从内存中查询是否存在这个图片，然后再从磁盘上去查询
+     *  9. cacheOperation 查询完成的doneBlock中 根据operation 是否已经是canceled 状态 判断是否需要从 runningOperations这个数组中移除
+     *  10.
+     */
+    
+    
     // Invoking this method without a completedBlock is pointless
     NSAssert(completedBlock != nil, @"If you mean to prefetch the image, use -[SDWebImagePrefetcher prefetchURLs] instead");
 
@@ -128,11 +148,13 @@
     __block SDWebImageCombinedOperation *operation = [SDWebImageCombinedOperation new];
     __weak SDWebImageCombinedOperation *weakOperation = operation;
 
+//    @synchronized 的作用是创建一个互斥锁，保证此时没有其它线程对self对象进行修改。这个是objective-c的一个锁定令牌，防止self对象在同一时间内被其它线程访问，起到线程的保护作用。 一般在公用变量的时候使用，如单例模式或者操作类的static变量中使用。
+    
     BOOL isFailedUrl = NO;
     @synchronized (self.failedURLs) {
         isFailedUrl = [self.failedURLs containsObject:url];
     }
-
+    
     if (url.absoluteString.length == 0 || (!(options & SDWebImageRetryFailed) && isFailedUrl)) {
         dispatch_main_sync_safe(^{
             NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorFileDoesNotExist userInfo:nil];
@@ -140,8 +162,7 @@
         });
         return operation;
     }
-
-    @synchronized (self.runningOperations) {
+     @synchronized (self.runningOperations) {
         [self.runningOperations addObject:operation];
     }
     NSString *key = [self cacheKeyForURL:url];
@@ -151,9 +172,18 @@
             @synchronized (self.runningOperations) {
                 [self.runningOperations removeObject:operation];
             }
-
             return;
         }
+        
+        /**
+         *   条件1 : 当图片不存在或者 option 中不包含 SDWebImageRefreshCached 这种策略，且 代理对象没有实现 imageManager:shouldDownloadImageForURL 这个代理 或者
+         *   imageManager:shouldDownloadImageForURL 的代理返回结果为真
+         *   条件2 : image对象存在且 option 不包含 SDWebImageRefreshCached ，那么在主线程中回调图片下载完成的completedBlock
+         *   
+         *   然后就是各种option 的处理 巴拉巴拉
+         *
+         *
+         */
 
         if ((!image || options & SDWebImageRefreshCached) && (![self.delegate respondsToSelector:@selector(imageManager:shouldDownloadImageForURL:)] || [self.delegate imageManager:self shouldDownloadImageForURL:url])) {
             if (image && options & SDWebImageRefreshCached) {
@@ -179,6 +209,13 @@
                 // ignore image read from NSURLCache if image if cached but force refreshing
                 downloaderOptions |= SDWebImageDownloaderIgnoreCachedResponse;
             }
+            
+            /**
+             * 通过 imageDownloader 生成一个 subOperation 如果 subOperation是已经被cancel 那么什么都不用干
+             * 否则出现error 信息的时候
+             */
+            
+            
             id <SDWebImageOperation> subOperation = [self.imageDownloader downloadImageWithURL:url options:downloaderOptions progress:progressBlock completed:^(UIImage *downloadedImage, NSData *data, NSError *error, BOOL finished) {
                 __strong __typeof(weakOperation) strongOperation = weakOperation;
                 if (!strongOperation || strongOperation.isCancelled) {
@@ -334,6 +371,13 @@
 }
 
 - (void)cancel {
+    
+    
+    /**
+     *  operation 调用cancel方法 首先判断operation:(继承自NSObjcet) cancelled 设置为YES 在 cacheOperation （NSOperation对象）调用cancel的方法
+     * cacheOperation调用过后释放 cacheOperation 并且调用 cancelBlock 的事件回调
+     */
+    
     self.cancelled = YES;
     if (self.cacheOperation) {
         [self.cacheOperation cancel];

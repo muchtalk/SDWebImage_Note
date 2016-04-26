@@ -305,6 +305,8 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
 }
 
 - (UIImage *)imageFromMemoryCacheForKey:(NSString *)key {
+    // 从 memCache 这个NSCache 这个对象中查询是否存在这个UIimage
+    
     return [self.memCache objectForKey:key];
 }
 
@@ -387,6 +389,15 @@ FOUNDATION_STATIC_INLINE NSUInteger SDCacheCostForImage(UIImage *image) {
         doneBlock(nil, SDImageCacheTypeNone);
         return nil;
     }
+    
+    /**
+     *  首先从内存中检查是否存在缓存图片
+     *  如果内存中不存在这个图片那么新建一个新的 NSOperation对象 
+     *  新建一个block任务 追加到 ioQueue 这个我们自己创建的串行队列中 ，去查询磁盘中否存在这个图片
+     *  在图片存在的情况下且 shouldCacheImagesInMemory 为YES， 默认为YES的情况下， 计算 diskImage 的 cost (cost是什么鬼)，然后保存在 memCache 这个NSCache对象中
+     *  然后异步通知主线程地并调用完成的doneBlock
+     *
+     */
 
     // First check the in-memory cache...
     UIImage *image = [self imageFromMemoryCacheForKey:key];
