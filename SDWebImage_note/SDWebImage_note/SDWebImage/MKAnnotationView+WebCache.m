@@ -10,6 +10,8 @@
 #import "objc/runtime.h"
 #import "UIView+WebCacheOperation.h"
 
+
+
 static char imageURLKey;
 
 @implementation MKAnnotationView (WebCache)
@@ -102,6 +104,10 @@ static char imageURLKey;
         }
     }];
 }
+
+
+
+
 
 - (void)setImageWithURL:(NSURL *)url placeholderImage:(UIImage *)placeholder completed:(SDWebImageCompletedBlock)completedBlock {
     [self sd_setImageWithURL:url placeholderImage:placeholder options:0 completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {

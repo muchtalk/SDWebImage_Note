@@ -133,11 +133,12 @@ static char TAG_ACTIVITY_SHOW;
     
     /**
      *  首先cancel掉之前的load 操作 然后用一个可变数组来接收根据多个url 返回的多个operation
-     *  opertion 的completed 回调中：
-     *  1.首先 判断weakself是否存在 如果不存在那么直接return，
-     *  2.否则先停止imageview正在播放动画的动作（stopAnimating）然后对weakself添加强引用strongSelf
-     *  3.判断self 和image 同时存在的情况那么拷贝self 当前的 animationImages 数组对象，如果 并且将新请求到的图片追加到 animationImages数组中并且重新赋值给当前的Imageview 标记view需要layout，
-     *  4.开始动画
+     *  opertion 的 completed 回调中：
+     *      1.首先 判断weakself是否存在 如果不存在那么直接return，
+     *      2.否则先停止imageview正在播放动画的动作（stopAnimating）然后对weakself添加强引用strongSelf
+     *      3.判断self 和image 同时存在的情况那么拷贝self 当前的 animationImages 数组对象，如果 并且将新请求到的图   片追加到 animationImages数组中并且重新赋值给当前的Imageview 标记view需要layout，
+     *      4.开始动画展示下载的图片数组 (也就是说 下载完成一张图片那么就要重新设置一次数组并且重新开始动画)
+     *
      */
     
     [self sd_cancelCurrentAnimationImagesLoad];
@@ -157,7 +158,6 @@ static char TAG_ACTIVITY_SHOW;
                         currentImages = [[NSMutableArray alloc] init];
                     }
                     [currentImages addObject:image];
-
                     sself.animationImages = currentImages;
                     [sself setNeedsLayout];
                 }
