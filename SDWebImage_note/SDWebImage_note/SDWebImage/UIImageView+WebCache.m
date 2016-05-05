@@ -43,7 +43,7 @@ static char TAG_ACTIVITY_SHOW;
 
 - (void)sd_setImageWithURL:(NSURL *)url placeholderImage:(UIImage *)placeholder options:(SDWebImageOptions)options progress:(SDWebImageDownloaderProgressBlock)progressBlock completed:(SDWebImageCompletionBlock)completedBlock {
     
-    // 取消当前正在load的image operations，并且将url链接作为 imageURLKey 然后在主线程中设置imageView的placeholder
+    // 取消当前正在load的image operations，并且将url链接作为 imageURLKey 然后在主线程中设置imageView的placeholder (除了 SDWebImageDelayPlaceholder情况，将会把placeholder放到)
     // 再根据是否需要显示转圈小菊花的 showActivityIndicatorView get方法决定是否显示菊花
     // 对self 进行weak 后将url,option,progressBlock等参数传入SDWebImageManager类生成一个图片下载的遵守 <SDWebImageOperation> 协议的 operation
     // operation 的 completed回调中提供了 下载image，状态finished, url, cacheType, error等信息，
@@ -52,7 +52,7 @@ static char TAG_ACTIVITY_SHOW;
     
     // 在operation completed回调处理：
         //  首先移除掉imageview上添加的菊花 ，判断如果wself已经被释放，那么直接retun；
-        //  1.然后将传入的option参数和 SDWebImageAvoidAutoSetImage进行2进制‘与’操作  判断当前image对象存在且 completedBlock不为空且与操作结果为真（options & SDWebImageAvoidAutoSetImage）那么直接调用 completedBlock并且返回
+        //  1.然后将传入的option参数和 SDWebImageAvoidAutoSetImage进行2进制‘与’操作  判断当前image对象存在且 completedBlock不为空且与操作结果为真（options & SDWebImageAvoidAutoSetImage）那么直接调用 completedBlock并且返回并且将image对象返回，且不将image添加到imageview上
         //  2.image 对象存在时添加image到imageview上并且标记view setNeedsLayout;
         //  3.如果 1和2都不满足的情况 判断option 是否包含了 SDWebImageDelayPlaceholder 如果包含了那么 设置将imageview 设置上placeholder,并且标记view setNeedsLayout；
         //  也就是在图片没有下载完之前且option中包含了 SDWebImageDelayPlaceholder那么我们
@@ -62,6 +62,7 @@ static char TAG_ACTIVITY_SHOW;
     objc_setAssociatedObject(self, &imageURLKey, url, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
     if (!(options & SDWebImageDelayPlaceholder)) {
+        
         dispatch_main_async_safe(^{
             self.image = placeholder;
         });
@@ -86,10 +87,11 @@ static char TAG_ACTIVITY_SHOW;
                     return;
                 }
                 else if (image) {
+                    // 如果image对象不为空那么直接展示image
                     wself.image = image;
                     [wself setNeedsLayout];
                 } else {
-// ??????????????????????
+                    // 图片下载完成之前 在 SDWebImageDelayPlaceholder这种策略下先展示 placeholder 图盘下载完了
                     if ((options & SDWebImageDelayPlaceholder)) {
                         wself.image = placeholder;
                         [wself setNeedsLayout];
@@ -138,7 +140,8 @@ static char TAG_ACTIVITY_SHOW;
      *      2.否则先停止imageview正在播放动画的动作（stopAnimating）然后对weakself添加强引用strongSelf
      *      3.判断self 和image 同时存在的情况那么拷贝self 当前的 animationImages 数组对象，如果 并且将新请求到的图   片追加到 animationImages数组中并且重新赋值给当前的Imageview 标记view需要layout，
      *      4.开始动画展示下载的图片数组 (也就是说 下载完成一张图片那么就要重新设置一次数组并且重新开始动画)
-     *
+     *      5.将动画 opertion 数组保存到 operationDictionary 以 UIImageViewAnimationImages 为 key
+     *      6.
      */
     
     [self sd_cancelCurrentAnimationImagesLoad];
@@ -175,7 +178,7 @@ static char TAG_ACTIVITY_SHOW;
     [self sd_cancelImageLoadOperationWithKey:@"UIImageViewImageLoad"];
 }
 
-- (void)sd_cancelCurrentAnimationImagesLoad {
+- (void)sd_cancelCurrentAnimationImagesLoad{
     // 根据 UIImageViewAnimationImages这个Key 去取消正在Animation 的imag请求
     [self sd_cancelImageLoadOperationWithKey:@"UIImageViewAnimationImages"];
 }

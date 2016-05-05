@@ -122,7 +122,7 @@
      *  2.对url参数进行容错处理
      *  3.创建一个新的 SDWebImageCombinedOperation （继承自NSObject而非NSOperation）对象
      *  4.判断当前需要请求的图片url 在 failedURLs这个集合中是否已经存在
-     *  5.根据url的lenth 为0 或者（ options 中包含 SDWebImageRetryFailed 这种option且url为 isFailedUrl）那么我们直接在主线程中抛出error信息并且回调block return一个operation
+     *  5.根据url的lenth 为0 或者（ options 中是否包含 SDWebImageRetryFailed 且url为 isFailedUrl）那么我们直接在主线程中抛出error信息并且回调block return一个operation
      *  6.如果 第五部没有执行，那么将这个 SDWebImageCombinedOperation 对象添加到 runningOperations这个可变数组中
      *  7.根据url生成一个缓存key 然后 SDImageCache 会生成一个 cacheOperation
      *  8. cacheOperation 会去从先从内存中查询是否存在这个图片，然后再从磁盘上去查询
@@ -193,6 +193,8 @@
                     completedBlock(image, nil, cacheType, YES, url);
                 });
             }
+            
+            //  根据 options 指定 downloaderOptions
 
             // download if no image or requested to refresh anyway, and download allowed by delegate
             SDWebImageDownloaderOptions downloaderOptions = 0;
