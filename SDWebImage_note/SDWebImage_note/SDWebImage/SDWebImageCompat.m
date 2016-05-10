@@ -16,14 +16,17 @@ inline UIImage *SDScaledImageForKey(NSString *key, UIImage *image) {
     if (!image) {
         return nil;
     }
-    
+
     if ([image.images count] > 0) {
+        
+        //有多个图片数组的情况
+        // 递归将图片缩放，现货区到屏幕的 scale 然后判断key length > 8 (?不懂)
+        // 然后判有没有2x，3x文字的存在 如果有那么会分别按命名来缩放
         NSMutableArray *scaledImages = [NSMutableArray array];
 
         for (UIImage *tempImage in image.images) {
             [scaledImages addObject:SDScaledImageForKey(key, tempImage)];
         }
-
         return [UIImage animatedImageWithImages:scaledImages duration:image.duration];
     }
     else {

@@ -278,6 +278,10 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
+    
+    // 收到图片数据之后的处理
+    // option 包含了 SDWebImageDownloaderProgressiveDownload 且 expectedSize > 0
+    
     [self.imageData appendData:data];
 
     if ((self.options & SDWebImageDownloaderProgressiveDownload) && self.expectedSize > 0 && self.completedBlock) {
@@ -411,7 +415,8 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
     }
     
     // 加载完成后根据 options 策略 如果是 SDWebImageDownloaderIgnoreCachedResponse 且 responseFromCached为真，那么我们直接调用completionBlock
-    // imageData存在时 将data 转换为image对象
+    // imageData存在时 将data 转换为image对象 然后缩放图片
+    // 如果 image 的图片数组存在 判断是否需要 decoded （去掉图片的alpha值）
     
     if (completionBlock) {
         if (self.options & SDWebImageDownloaderIgnoreCachedResponse && responseFromCached) {

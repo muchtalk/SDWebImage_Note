@@ -167,7 +167,7 @@ static NSString *const kCompletedCallbackKey = @"completed";
                                                             __block NSArray *callbacksForURL;
                                                             dispatch_barrier_sync(sself.barrierQueue, ^{
                                                                 callbacksForURL = [sself.URLCallbacks[url] copy];
-                                                                if (finished) {
+                                                                if (finished){
                                                                     [sself.URLCallbacks removeObjectForKey:url];
                                                                 }
                                                             });
