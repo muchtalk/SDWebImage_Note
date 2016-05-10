@@ -132,7 +132,6 @@ static char TAG_ACTIVITY_SHOW;
 }
 
 - (void)sd_setAnimationImagesWithURLs:(NSArray *)arrayOfURLs {
-    
     /**
      *  首先cancel掉之前的load 操作 然后用一个可变数组来接收根据多个url 返回的多个operation
      *  opertion 的 completed 回调中：

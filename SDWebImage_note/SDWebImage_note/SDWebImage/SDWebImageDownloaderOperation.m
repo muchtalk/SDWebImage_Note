@@ -66,12 +66,21 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
 }
 
 - (void)start {
+    //  重写operation 的start 方法 并且加上同步互斥锁
+    //  如果是 isCancelled 为真的情况下设置 self.finished 并且调用 reset 方法并返回
+    
     @synchronized (self) {
         if (self.isCancelled) {
             self.finished = YES;
             [self reset];
             return;
         }
+        
+        // hasApplication && 添加了SDWebImageDownloaderContinueInBackground 的策略时
+        // 获取到 UIApplication对象 开启一个后台任务  任务截止时调用以下逻辑
+        // {
+        //    cancel掉当前opertion并且endBackgroundTask 并重置 backgroundTaskId
+        // }
 
 #if TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_4_0
         Class UIApplicationClass = NSClassFromString(@"UIApplication");
@@ -91,7 +100,8 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
             }];
         }
 #endif
-
+        
+        // 创建一个新的 connection 且暂时先不开始 设置好 thread 然后开始 connection
         self.executing = YES;
         self.connection = [[NSURLConnection alloc] initWithRequest:self.request delegate:self startImmediately:NO];
         self.thread = [NSThread currentThread];
@@ -99,6 +109,13 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
 
     [self.connection start];
 
+    // 当 self.connection 且self.progressBlock 那么而开始调用 progressBlock
+    // 主线程中发送 SDWebImageDownloadStartNotification 的通知
+    // runloop那段看不懂啊（加了一个10s的timeout）
+    // 如果connection为空，那么直接抛出错提示 connection没有初始化
+    // self.backgroundTaskId存在时 endbackgroundTask
+    
+    
     if (self.connection) {
         if (self.progressBlock) {
             self.progressBlock(0, NSURLResponseUnknownLength);
@@ -142,6 +159,8 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
 }
 
 - (void)cancel {
+    //  添加互斥锁 ， 在self.thread存在时 在这个 thread 中调用 cancelInternalAndStop 这个方法 thread 不存在调用cancelInternal你
+    
     @synchronized (self) {
         if (self.thread) {
             [self performSelector:@selector(cancelInternalAndStop) onThread:self.thread withObject:nil waitUntilDone:NO];
@@ -154,11 +173,17 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
 
 - (void)cancelInternalAndStop {
     if (self.isFinished) return;
-    [self cancelInternal];
-    CFRunLoopStop(CFRunLoopGetCurrent());
+    [self cancelInternal]; // cancel掉网络请求
+    CFRunLoopStop(CFRunLoopGetCurrent()); // 停掉当前的runloop
 }
 
 - (void)cancelInternal {
+//    isFinished 直接return
+//    调用 super 的cancel
+//    cancelBlock 存在的时候调用cancelBlock
+//    cancel 掉 connection 并且在主线程中发送 SDWebImageDownloadStopNotification 的通知
+//    设置 isExecuting 和 isFinished 的状态 然后调用 reset
+    
     if (self.isFinished) return;
     [super cancel];
     if (self.cancelBlock) self.cancelBlock();
@@ -168,7 +193,7 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
         dispatch_async(dispatch_get_main_queue(), ^{
             [[NSNotificationCenter defaultCenter] postNotificationName:SDWebImageDownloadStopNotification object:self];
         });
-
+        
         // As we cancelled the connection, its callback won't be called and thus won't
         // maintain the isFinished and isExecuting flags.
         if (self.isExecuting) self.executing = NO;
@@ -185,6 +210,9 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
 }
 
 - (void)reset {
+    /**
+     *   清空状态block 等信息
+     */
     self.cancelBlock = nil;
     self.completedBlock = nil;
     self.progressBlock = nil;
@@ -362,6 +390,11 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)aConnection {
+    
+    // 请求加载完成的时候 加锁清空thread 和connection 并且发送 SDWebImageDownloadStopNotification 和 SDWebImageDownloadFinishNotification的通知
+    // 停止当前的runloop
+    // 如果cache 中不存在_request 的缓存那么修改 responseFromCached 的状态
+    
     SDWebImageDownloaderCompletedBlock completionBlock = self.completedBlock;
     @synchronized(self) {
         CFRunLoopStop(CFRunLoopGetCurrent());
@@ -376,6 +409,9 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
     if (![[NSURLCache sharedURLCache] cachedResponseForRequest:_request]) {
         responseFromCached = NO;
     }
+    
+    // 加载完成后根据 options 策略 如果是 SDWebImageDownloaderIgnoreCachedResponse 且 responseFromCached为真，那么我们直接调用completionBlock
+    // imageData存在时 将data 转换为image对象
     
     if (completionBlock) {
         if (self.options & SDWebImageDownloaderIgnoreCachedResponse && responseFromCached) {
@@ -406,6 +442,12 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
+    
+    // 先加锁
+    // stop 掉 CFRunLoopStop
+    // 请求失败的时候发送 SDWebImageDownloadStopNotification通知
+    // 调用 completedBlock 然后调用done done 重置了状态和其他对象
+
     @synchronized(self) {
         CFRunLoopStop(CFRunLoopGetCurrent());
         self.thread = nil;
@@ -422,7 +464,16 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
     [self done];
 }
 
+- (BOOL)shouldContinueWhenAppEntersBackground {
+    
+    // option中是否包含了 SDWebImageDownloaderContinueInBackground来判断是否支持后台下载；
+    return self.options & SDWebImageDownloaderContinueInBackground;
+}
+
 - (NSCachedURLResponse *)connection:(NSURLConnection *)connection willCacheResponse:(NSCachedURLResponse *)cachedResponse {
+    
+    // 如果说 这个方法被调用，那么说明response不是从 cache读过来的，所以 修改responseFromCached 的状态
+    // 如果是忽略 缓存那么直接return nil
     responseFromCached = NO; // If this method is called, it means the response wasn't read from cache
     if (self.request.cachePolicy == NSURLRequestReloadIgnoringLocalCacheData) {
         // Prevents caching of responses
@@ -433,15 +484,13 @@ NSString *const SDWebImageDownloadFinishNotification = @"SDWebImageDownloadFinis
     }
 }
 
-- (BOOL)shouldContinueWhenAppEntersBackground {
-    return self.options & SDWebImageDownloaderContinueInBackground;
-}
-
 - (BOOL)connectionShouldUseCredentialStorage:(NSURLConnection __unused *)connection {
     return self.shouldUseCredentialStorage;
 }
 
 - (void)connection:(NSURLConnection *)connection willSendRequestForAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge{
+    
+    // https 验证
     if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust]) {
         if (!(self.options & SDWebImageDownloaderAllowInvalidSSLCertificates) &&
             [challenge.sender respondsToSelector:@selector(performDefaultHandlingForAuthenticationChallenge:)]) {

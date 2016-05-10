@@ -116,12 +116,25 @@ static NSString *const kCompletedCallbackKey = @"completed";
     __block SDWebImageDownloaderOperation *operation;
     __weak __typeof(self)wself = self;
 
+    // 将将要下载的url 添加到 callbacksURLs dictionary中保存起来
+    // callbacksURLs 中不存在 url 的时候会为该url创建保存progressblock和completedBlock的array 且createCallback 会调用
+    // 为url保存callback的数据结构 {url : [{@"progress" : xx ,@"complet" : xx},{@"progress" : xx ,@"complet" : xx},]} key为url对象
+    
+    //    createCallback ：  第一次创建url的callbak 才会调用，
+    /* createCallback 中得操作:
+     * 1.设置 downloadTimeout 默认为15s
+     * 2.创建 urlrequest 设置好 cachePolicy (指定用NSURLCache 使用 NSURLRequestUseProtocolCachePolicy 不然用 NSURLRequestReloadIgnoringLocalCacheData )
+     * 3.设置 headersFilter
+     * 4.创建 operation 带下载的 request
+     */
+    
     [self addProgressCallback:progressBlock completedBlock:completedBlock forURL:url createCallback:^{
         NSTimeInterval timeoutInterval = wself.downloadTimeout;
         if (timeoutInterval == 0.0) {
             timeoutInterval = 15.0;
         }
 
+        // 为了避免重复缓存 (NSURLCache + SDImageCache) 我们
         // In order to prevent from potential duplicate caching (NSURLCache + SDImageCache) we disable the cache for image requests if told otherwise
         NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url cachePolicy:(options & SDWebImageDownloaderUseNSURLCache ? NSURLRequestUseProtocolCachePolicy : NSURLRequestReloadIgnoringLocalCacheData) timeoutInterval:timeoutInterval];
         request.HTTPShouldHandleCookies = (options & SDWebImageDownloaderHandleCookies);
@@ -197,13 +210,22 @@ static NSString *const kCompletedCallbackKey = @"completed";
 
 - (void)addProgressCallback:(SDWebImageDownloaderProgressBlock)progressBlock completedBlock:(SDWebImageDownloaderCompletedBlock)completedBlock forURL:(NSURL *)url createCallback:(SDWebImageNoParamsBlock)createCallback {
     // The URL will be used as the key to the callbacks dictionary so it cannot be nil. If it is nil immediately call the completed block with no image or data.
+    
+    // 1.url 为空的时候 completedBlock 立即返回
+    
     if (url == nil) {
         if (completedBlock != nil) {
             completedBlock(nil, nil, nil, NO);
         }
         return;
     }
-
+    
+    // self.barrierQueue 队列中追加一个任务：
+    // 如果_URLCallbacks 中根据 url对象作为KEY去字典中查询是否存在才 callbacksForURL 的数组 那么标记 first 的值
+    // 每一个url都会创建一个callbacks的NSMutableDictionary （不管url是否相同，每一个url将会有对应的数组 数组中会保存这个url 的多个装有block的dic）callback用来保存 progressBlock 和 completedBlock 然后添加到 callbacksForURL 数组中
+    // 如果first 为真 那么调用 createCallback的block
+    // (如果是同一个url的情况 会先检查是否存在正在下载的progress callbacks 是否存在)
+    // block -> dic -> array -> dic
     dispatch_barrier_sync(self.barrierQueue, ^{
         BOOL first = NO;
         if (!self.URLCallbacks[url]) {
@@ -226,6 +248,7 @@ static NSString *const kCompletedCallbackKey = @"completed";
 }
 
 - (void)setSuspended:(BOOL)suspended {
+    // 暂停/启动 正在下载的 NSOperationQueue
     [self.downloadQueue setSuspended:suspended];
 }
 

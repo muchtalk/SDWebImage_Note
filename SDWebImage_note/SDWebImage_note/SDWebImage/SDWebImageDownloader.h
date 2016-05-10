@@ -40,6 +40,7 @@ typedef NS_OPTIONS(NSUInteger, SDWebImageDownloaderOptions) {
     /**
      * Handles cookies stored in NSHTTPCookieStore by setting 
      * NSMutableURLRequest.HTTPShouldHandleCookies = YES;
+     * 使用了这个策略那么会设置 NSMutableURLRequest.HTTPShouldHandleCookies = YES
      */
     SDWebImageDownloaderHandleCookies = 1 << 5,
 
